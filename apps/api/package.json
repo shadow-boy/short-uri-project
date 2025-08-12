@@ -2,8 +2,12 @@
   "name": "@shorturi/api",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": "^20"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
     "start": "node --enable-source-maps ./dist/server.js",
     "typecheck": "tsc --noEmit"
   },
