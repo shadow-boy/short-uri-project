@@ -1,0 +1,12 @@
+# Node
+node_modules/
+**/node_modules/
+
+# Env files
+.env
+.env.local
+.env.*
+
+# Build outputs
+apps/**/dist/
+**/.DS_Store

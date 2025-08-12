@@ -1,0 +1,23 @@
+{
+  "name": "short-uri-project",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace @shorturi/api",
+    "dev:web": "npm run dev --workspace @shorturi/web",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "node scripts/apply-migrations.mjs",
+    "db:migrate": "drizzle-kit migrate",
+    "build": "echo Use Vercel to build per project"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.10",
+    "dotenv": "^16.6.1",
+    "drizzle-kit": "^0.31.4",
+    "drizzle-orm": "^0.44.4",
+    "typescript": "^5.9.2"
+  }
+}
