@@ -9,7 +9,7 @@ const maybeEnvPath = path.join(process.cwd(), '.env');
 if (fs.existsSync(maybeEnvPath)) {
   dotenv.config({ path: maybeEnvPath });
 } else {
-  dotenv.config();
+  // dotenv.config();
 }
 
 const connectionString = process.env.DATABASE_URL;
