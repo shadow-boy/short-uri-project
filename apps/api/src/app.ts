@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { db } from './db';
-import { links, clicks } from '../../../packages/db/schema';
+import { links, clicks } from './schema';
 import { and, eq } from 'drizzle-orm';
 import crypto from 'crypto';
 import { z } from 'zod';
