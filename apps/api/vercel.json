@@ -1,11 +1,4 @@
 {
-  "functions": {
-    "api/index.ts": {
-      "runtime": "nodejs20.x",
-      "maxDuration": 10,
-      "memory": 256
-    }
-  },
   "rewrites": [
     { "source": "/(.*)", "destination": "/api/index.ts" }
   ]
