@@ -25,8 +25,10 @@ short-uri-project/
   tsconfig.base.json
 ```
 
-## 功能概览（MVP）
-- 创建/列表/删除短链（前端管理界面已实现）
+## 功能概览
+- 管理员登录系统（基于环境变量的固定账号）
+- 创建/列表/删除短链（需登录后操作）
+- 短链点击量统计与分析
 - 访问 `/:slug` 跳转（后端 302）
 - `slug` 全小写；前端新建时自动生成 8 位随机 `slug`
 
@@ -40,10 +42,18 @@ short-uri-project/
 
 ```
 DATABASE_URL=postgresql://<user>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres?sslmode=require
+
+# 管理员账号配置
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=admin123456
+
+# JWT密钥
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
 ```
 
 - 必须使用 Supabase Connection Pooling（PgBouncer）DSN，端口通常为 `6543`，并附加 `sslmode=require`。
-- 生产环境（Vercel）在项目设置的 Environment Variables 中设置同名变量。
+- 管理员账号密码可自定义，默认为 `admin/admin123456`
+- 生产环境（Vercel）在项目设置的 Environment Variables 中设置所有变量。
 
 前端（`apps/web`）支持（构建时变量）：
 
@@ -87,21 +97,23 @@ npm run dev:web
 ```
 
 5) 访问
-- 管理端：`http://localhost:5173`（创建、查看、删除）
+- 管理端：`http://localhost:5173`（使用 admin/admin123456 登录）
 - 短链跳转：`http://localhost:3001/{slug}`（302 到目标地址）
 
 ## API 速览
 
-- POST `/api/links` 创建短链
+- POST `/api/auth/login` 管理员登录
+  - 请求体：`{ username: string, password: string }`
+  - 成功：`200 { token, user }`
+- POST `/api/links` 创建短链（需认证）
   - 请求体：`{ slug: string, destinationUrl: string }`（slug 小写）
   - 成功：`201 { slug }`
-- GET `/api/links` 列表
-- GET `/api/links/:id` 详情
-- PUT `/api/links/:id` 更新
-- DELETE `/api/links/:id` 删除
-- GET `/:slug` 跳转（公开）
-
-> 生产可接入 Supabase Auth，使用 Bearer Token 校验并按 `owner_id` 隔离，这里暂为 MVP。
+- GET `/api/links` 列表（需认证）
+- GET `/api/links/:id` 详情（需认证）
+- PUT `/api/links/:id` 更新（需认证）
+- DELETE `/api/links/:id` 删除（需认证）
+- GET `/api/analytics/:linkId/basic` 点击量统计（需认证）
+- GET `/:slug` 跳转（公开，记录点击）
 
 ## 部署到 Vercel
 
@@ -114,7 +126,11 @@ npm run dev:web
 
 - API（Express）
   - Root Directory: `apps/api`
-  - 环境变量：`DATABASE_URL=Supabase Pooling DSN（带 sslmode=require）`
+  - 环境变量：
+    - `DATABASE_URL=Supabase Pooling DSN（带 sslmode=require）`
+    - `ADMIN_USERNAME=admin`（可自定义）
+    - `ADMIN_PASSWORD=your-secure-password`（强烈建议修改）
+    - `JWT_SECRET=your-super-secret-jwt-key`（必须修改）
   - 绑定短链域名（例如 `s.yourdomain.com`）
 
 > 若不想在前端配置 `VITE_API_BASE_URL`，可在 Web 项目加 `vercel.json` 将 `/api/*` 重写到 API 域名。

@@ -6,6 +6,9 @@ import { and, eq } from 'drizzle-orm';
 import crypto from 'crypto';
 import { z } from 'zod';
 import { getUserId } from './auth';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 
 const app = express();
 
@@ -24,6 +27,26 @@ app.get('/healthz/db', asyncHandler(async (_req: Request, res: Response) => {
   res.json({ ok: true });
 }));
 
+// Admin login only (no registration)
+const AuthSchema = z.object({ username: z.string().min(1), password: z.string().min(1) });
+
+app.post('/api/auth/login', asyncHandler(async (req: Request, res: Response) => {
+  const parse = AuthSchema.safeParse(req.body);
+  if (!parse.success) return res.status(400).json({ error: 'Invalid input' });
+  
+  const { username, password } = parse.data;
+  const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123456';
+  
+  if (username !== adminUsername || password !== adminPassword) {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+  
+  // Generate token for admin user
+  const token = jwt.sign({ sub: 'admin', username: adminUsername, role: 'admin' }, JWT_SECRET, { expiresIn: '7d' });
+  res.json({ token, user: { username: adminUsername, role: 'admin' } });
+}));
+
 const CreateLinkSchema = z.object({
   slug: z.string().min(1).max(64).regex(/^[a-z0-9-_]+$/),
   destinationUrl: z
@@ -40,6 +63,7 @@ app.post('/api/links', asyncHandler(async (req: Request, res: Response) => {
   const userId = getUserId(req);
   const parse = CreateLinkSchema.safeParse(req.body);
   if (!parse.success) return res.status(400).json({ error: parse.error.flatten() });
+  if (!userId) return res.status(401).json({ error: 'unauthorized' });
 
   const { slug, destinationUrl, isActive, expiresAt, clickLimit, tags } = parse.data;
   const normalizedSlug = slug.toLowerCase();
@@ -51,7 +75,7 @@ app.post('/api/links', asyncHandler(async (req: Request, res: Response) => {
       expiresAt: expiresAt ? (new Date(expiresAt) as any) : null,
       clickLimit: clickLimit ?? null,
       tags: tags ?? null,
-      ownerId: userId,
+      ownerId: 'admin', // Fixed admin owner
     });
     res.status(201).json({ slug });
   } catch (e: any) {
@@ -62,18 +86,20 @@ app.post('/api/links', asyncHandler(async (req: Request, res: Response) => {
 
 app.get('/api/links', asyncHandler(async (req: Request, res: Response) => {
   const userId = getUserId(req);
-  const where = userId ? eq(links.ownerId, userId as any) : undefined;
-  const rows = await db.select().from(links).where(where);
+  if (!userId) return res.status(401).json({ error: 'unauthorized' });
+  // Admin can see all links
+  const rows = await db.select().from(links).where(eq(links.ownerId, 'admin'));
   res.json(rows);
 }));
 
 app.get('/api/links/:id', asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const userId = getUserId(req);
+  if (!userId) return res.status(401).json({ error: 'unauthorized' });
   const rows = await db
     .select()
     .from(links)
-    .where(and(eq(links.id, id as any), userId ? eq(links.ownerId, userId as any) : undefined));
+    .where(and(eq(links.id, id as any), eq(links.ownerId, 'admin')));
   if (!rows[0]) return res.status(404).json({ error: 'not found' });
   res.json(rows[0]);
 }));
@@ -81,6 +107,7 @@ app.get('/api/links/:id', asyncHandler(async (req: Request, res: Response) => {
 app.put('/api/links/:id', asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const userId = getUserId(req);
+  if (!userId) return res.status(401).json({ error: 'unauthorized' });
 
   const UpdSchema = CreateLinkSchema.partial();
   const parsed = UpdSchema.safeParse(req.body);
@@ -92,16 +119,17 @@ app.put('/api/links/:id', asyncHandler(async (req: Request, res: Response) => {
   const result = await db
     .update(links)
     .set(setters)
-    .where(and(eq(links.id, id as any), userId ? eq(links.ownerId, userId as any) : undefined));
+    .where(and(eq(links.id, id as any), eq(links.ownerId, 'admin')));
   res.json({ ok: true, changed: (result as any)?.rowCount ?? 1 });
 }));
 
 app.delete('/api/links/:id', asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const userId = getUserId(req);
+  if (!userId) return res.status(401).json({ error: 'unauthorized' });
   await db
     .delete(links)
-    .where(and(eq(links.id, id as any), userId ? eq(links.ownerId, userId as any) : undefined));
+    .where(and(eq(links.id, id as any), eq(links.ownerId, 'admin')));
   res.json({ ok: true });
 }));
 
@@ -129,6 +157,13 @@ app.get('/:slug', asyncHandler(async (req: Request, res: Response) => {
   } catch {}
 
   res.redirect(302, row.destinationUrl);
+}));
+
+// Analytics - basic clicks by linkId
+app.get('/api/analytics/:linkId/basic', asyncHandler(async (req: Request, res: Response) => {
+  const { linkId } = req.params;
+  const rows = await db.select().from(clicks).where(eq(clicks.linkId, linkId as any));
+  res.json({ totalClicks: rows.length, linkId });
 }));
 
 // global error handler
