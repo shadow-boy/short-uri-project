@@ -1,9 +1,7 @@
-import serverless from 'serverless-http';
 import app from '../src/app';
 
-// Use default Node.js runtime. Do not specify unsupported versions.
-export const config = { runtime: 'nodejs' };
-
-export default serverless(app);
+// Vercel Node.js Functions expect a default-exported handler (req, res).
+// Express app is a request handler, so export it directly.
+export default app;
 
 
