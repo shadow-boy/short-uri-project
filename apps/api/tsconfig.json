@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    // Allow importing shared packages outside this folder (e.g., packages/db/schema.ts)
+    "module": "CommonJS",
     "types": ["node"]
   },
   "include": ["src", "api"]
