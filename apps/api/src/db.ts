@@ -1,16 +1,15 @@
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-// Load .env from repo root only if exists; otherwise rely on process env (e.g., Vercel)
-const rootEnvPath = path.resolve(__dirname, '../../../.env');
-if (fs.existsSync(rootEnvPath)) {
-  dotenv.config({ path: rootEnvPath });
+// Load .env from current working directory only if exists; otherwise rely on process env (e.g., Vercel)
+const maybeEnvPath = path.join(process.cwd(), '.env');
+if (fs.existsSync(maybeEnvPath)) {
+  dotenv.config({ path: maybeEnvPath });
+} else {
+  dotenv.config();
 }
 
 const connectionString = process.env.DATABASE_URL;
