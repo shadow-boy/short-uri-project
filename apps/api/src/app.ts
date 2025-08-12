@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { db } from './db';
 import { links, clicks } from '../../../packages/db/schema';
@@ -9,8 +9,8 @@ import { getUserId } from './auth';
 
 const app = express();
 
-function asyncHandler<Req, Res, Next>(fn: any) {
-  return (req: any, res: any, next: any) => {
+function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<any> | any) {
+  return (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
 }
@@ -18,7 +18,7 @@ function asyncHandler<Req, Res, Next>(fn: any) {
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.get('/healthz', (_, res) => res.json({ ok: true }));
-app.get('/healthz/db', asyncHandler(async (_req, res) => {
+app.get('/healthz/db', asyncHandler(async (_req: Request, res: Response) => {
   // simple connectivity check
   await db.execute("select 1");
   res.json({ ok: true });
@@ -36,7 +36,7 @@ const CreateLinkSchema = z.object({
   tags: z.array(z.string()).optional(),
 });
 
-app.post('/api/links', asyncHandler(async (req, res) => {
+app.post('/api/links', asyncHandler(async (req: Request, res: Response) => {
   const userId = getUserId(req);
   const parse = CreateLinkSchema.safeParse(req.body);
   if (!parse.success) return res.status(400).json({ error: parse.error.flatten() });
@@ -60,14 +60,14 @@ app.post('/api/links', asyncHandler(async (req, res) => {
   }
 }));
 
-app.get('/api/links', asyncHandler(async (req, res) => {
+app.get('/api/links', asyncHandler(async (req: Request, res: Response) => {
   const userId = getUserId(req);
   const where = userId ? eq(links.ownerId, userId as any) : undefined;
   const rows = await db.select().from(links).where(where);
   res.json(rows);
 }));
 
-app.get('/api/links/:id', asyncHandler(async (req, res) => {
+app.get('/api/links/:id', asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const userId = getUserId(req);
   const rows = await db
@@ -78,7 +78,7 @@ app.get('/api/links/:id', asyncHandler(async (req, res) => {
   res.json(rows[0]);
 }));
 
-app.put('/api/links/:id', asyncHandler(async (req, res) => {
+app.put('/api/links/:id', asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const userId = getUserId(req);
 
@@ -96,7 +96,7 @@ app.put('/api/links/:id', asyncHandler(async (req, res) => {
   res.json({ ok: true, changed: (result as any)?.rowCount ?? 1 });
 }));
 
-app.delete('/api/links/:id', asyncHandler(async (req, res) => {
+app.delete('/api/links/:id', asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const userId = getUserId(req);
   await db
@@ -106,7 +106,7 @@ app.delete('/api/links/:id', asyncHandler(async (req, res) => {
 }));
 
 // 最后注册 slug 重定向（避免与 /api/* 冲突）
-app.get('/:slug', asyncHandler(async (req, res) => {
+app.get('/:slug', asyncHandler(async (req: Request, res: Response) => {
   const slug = String(req.params.slug || '').toLowerCase();
   if (slug === 'api' || slug === 'healthz') return res.status(404).send('Not found');
   const row = (
@@ -133,7 +133,7 @@ app.get('/:slug', asyncHandler(async (req, res) => {
 
 // global error handler
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   const status = err?.status || 503;
   const message = err?.message || 'Service unavailable';
   res.status(status).json({ error: message });
