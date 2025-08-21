@@ -227,19 +227,15 @@ export async function onRequest(context) {
     }
   }
 
-  // Handle slug redirects
+  // Handle slug redirects (only for non-API, non-asset paths)
   if (url.pathname.startsWith('/') && url.pathname !== '/') {
     const slug = url.pathname.substring(1).toLowerCase();
     
-    // Skip API routes
-    if (slug.startsWith('api/') || slug === 'healthz' || slug === 'test') {
-      return new Response(JSON.stringify({
-        message: 'API endpoint not found',
-        path: url.pathname
-      }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      });
+    // Skip API routes and static assets
+    if (slug.startsWith('api/') || slug === 'healthz' || slug === 'test' || 
+        slug.startsWith('assets/') || slug.includes('.')) {
+      // Let Cloudflare Pages handle static assets and API routes
+      return env.ASSETS.fetch(request);
     }
 
     try {
