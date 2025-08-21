@@ -188,10 +188,22 @@ export async function onRequest(context) {
       const list = await env.SHORT_URI_KV.list({ prefix: `click:${linkId}:` });
       const totalClicks = list.keys.length;
       
-      return new Response(JSON.stringify({ totalClicks }), {
+      console.log(`Analytics for link ${linkId}: found ${totalClicks} clicks`);
+      console.log('Click keys:', list.keys.map(k => k.name));
+      
+      return new Response(JSON.stringify({ 
+        totalClicks,
+        debug: {
+          linkId,
+          prefix: `click:${linkId}:`,
+          keysFound: list.keys.length,
+          keyNames: list.keys.map(k => k.name)
+        }
+      }), {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       });
     } catch (error) {
+      console.error('Analytics error:', error);
       return new Response(JSON.stringify({ error: 'Failed to get analytics' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
@@ -337,10 +349,11 @@ export async function onRequest(context) {
           referrer: request.headers.get('referer') || '',
           ip: request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || ''
         };
-        // Don't await this to avoid slowing down the redirect
-        env.SHORT_URI_KV.put(`click:${link.id}:${clickId}`, JSON.stringify(click));
+        // Save click record
+        await env.SHORT_URI_KV.put(`click:${link.id}:${clickId}`, JSON.stringify(click));
+        console.log(`Click logged for link ${link.id}: ${clickId}`);
       } catch (e) {
-        // Ignore click logging errors
+        console.error('Click logging error:', e);
       }
 
       return Response.redirect(link.destinationUrl, 302);
