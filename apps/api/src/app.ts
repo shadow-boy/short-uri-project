@@ -241,4 +241,7 @@ app.get('/:slug', async (c) => {
 
 export default app;
 
+// Export for Cloudflare Pages Functions
+export const onRequest = app.fetch;
+
 
