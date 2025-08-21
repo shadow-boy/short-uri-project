@@ -199,6 +199,51 @@ export async function onRequest(context) {
     }
   }
 
+  // Delete a link
+  if (url.pathname.match(/^\/api\/links\/([^\/]+)$/) && request.method === 'DELETE') {
+    const user = await getUserFromRequest(request, env);
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+
+    const linkId = url.pathname.split('/')[3];
+    try {
+      // Get the link data first
+      const linkData = await env.SHORT_URI_KV.get(`link:${linkId}`);
+      if (!linkData) {
+        return new Response(JSON.stringify({ error: 'Link not found' }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+
+      const link = JSON.parse(linkData);
+      
+      // Delete the link data
+      await env.SHORT_URI_KV.delete(`link:${linkId}`);
+      // Delete the slug mapping
+      await env.SHORT_URI_KV.delete(`slug:${link.slug}`);
+      
+      // Delete all click records for this link
+      const clickList = await env.SHORT_URI_KV.list({ prefix: `click:${linkId}:` });
+      for (const key of clickList.keys) {
+        await env.SHORT_URI_KV.delete(key.name);
+      }
+      
+      return new Response(JSON.stringify({ message: 'Link deleted successfully' }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({ error: 'Failed to delete link' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+  }
+
   // Create new link
   if (url.pathname === '/api/links' && request.method === 'POST') {
     const user = await getUserFromRequest(request, env);
