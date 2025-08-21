@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "wrangler dev src/app.ts --local --kv SHORT_URI_KV",
     "deploy": "wrangler pages deploy ./dist",
-    "build": "esbuild src/app.ts --bundle --format=esm --outfile=../../functions/[[path]].js --define:process.env.NODE_ENV=\\\"production\\\"",
+    "build": "mkdir -p ../../functions && cp ../../functions-simple.js ../../functions/[[path]].js",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
