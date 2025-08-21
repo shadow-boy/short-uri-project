@@ -86,9 +86,8 @@ export default function Dashboard({ onLogout }: DashboardProps) {
   };
 
   const copyToClipboard = async (slug: string) => {
-    // 使用API的base URL作为短链域名
-    const apiBaseUrl = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:3001';
-    const shortUrl = `${apiBaseUrl}/${slug}`;
+    // 使用当前域名作为短链域名
+    const shortUrl = `${window.location.origin}/${slug}`;
     try {
       await navigator.clipboard.writeText(shortUrl);
       setMsg(`短链已复制: ${shortUrl}`);
