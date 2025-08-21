@@ -176,7 +176,62 @@ export async function onRequest(context) {
     }
   }
 
-  // Get analytics for a link
+  // Get analytics for all links (batch query)
+  if (url.pathname === '/api/analytics/batch' && request.method === 'GET') {
+    const user = await getUserFromRequest(request, env);
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+
+    try {
+      // Get all links first
+      const linkList = await env.SHORT_URI_KV.list({ prefix: 'link:' });
+      const links = [];
+      for (const key of linkList.keys) {
+        const data = await env.SHORT_URI_KV.get(key.name);
+        if (data) {
+          links.push(JSON.parse(data));
+        }
+      }
+
+      // Get all click records in one query
+      const clickList = await env.SHORT_URI_KV.list({ prefix: 'click:' });
+      
+      // Count clicks for each link
+      const analytics = {};
+      for (const link of links) {
+        analytics[link.id] = 0;
+      }
+      
+      // Count clicks by link ID
+      for (const key of clickList.keys) {
+        const parts = key.name.split(':');
+        if (parts.length >= 3) {
+          const linkId = parts[1];
+          if (analytics.hasOwnProperty(linkId)) {
+            analytics[linkId]++;
+          }
+        }
+      }
+      
+      console.log(`Batch analytics: found ${clickList.keys.length} total clicks for ${links.length} links`);
+      
+      return new Response(JSON.stringify({ analytics }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    } catch (error) {
+      console.error('Batch analytics error:', error);
+      return new Response(JSON.stringify({ error: 'Failed to get batch analytics' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+  }
+
+  // Get analytics for a single link (keep for backward compatibility)
   if (url.pathname.match(/^\/api\/analytics\/([^\/]+)\/basic$/) && request.method === 'GET') {
     const user = await getUserFromRequest(request, env);
     if (!user) {

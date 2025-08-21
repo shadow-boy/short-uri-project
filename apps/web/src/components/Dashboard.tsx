@@ -30,17 +30,24 @@ export default function Dashboard({ onLogout }: DashboardProps) {
       const { data } = await api.get<Link[]>('/api/links');
       setLinks(data);
       
-      // 获取每个链接的点击量
-      const analyticsData: Record<string, number> = {};
-      for (const link of data) {
-        try {
-          const { data: analyticsResult } = await api.get(`/api/analytics/${link.id}/basic`);
-          analyticsData[link.id] = analyticsResult.totalClicks || 0;
-        } catch (e) {
-          analyticsData[link.id] = 0;
+      // 批量获取所有链接的点击量
+      try {
+        const { data: analyticsResult } = await api.get('/api/analytics/batch');
+        setAnalytics(analyticsResult.analytics || {});
+      } catch (e) {
+        console.error('Failed to load analytics:', e);
+        // 如果批量查询失败，回退到单个查询
+        const analyticsData: Record<string, number> = {};
+        for (const link of data) {
+          try {
+            const { data: singleResult } = await api.get(`/api/analytics/${link.id}/basic`);
+            analyticsData[link.id] = singleResult.totalClicks || 0;
+          } catch (e) {
+            analyticsData[link.id] = 0;
+          }
         }
+        setAnalytics(analyticsData);
       }
-      setAnalytics(analyticsData);
     } catch (e: any) {
       setMsg(e?.response?.data?.error || '加载失败');
     }
