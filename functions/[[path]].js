@@ -172,6 +172,33 @@ export async function onRequest(context) {
     }
   }
 
+  // Get analytics for a link
+  if (url.pathname.match(/^\/api\/analytics\/([^\/]+)\/basic$/) && request.method === 'GET') {
+    const user = await getUserFromRequest(request, env);
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+
+    const linkId = url.pathname.split('/')[3];
+    try {
+      // Count clicks for this link
+      const list = await env.SHORT_URI_KV.list({ prefix: `click:${linkId}:` });
+      const totalClicks = list.keys.length;
+      
+      return new Response(JSON.stringify({ totalClicks }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({ error: 'Failed to get analytics' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+  }
+
   // Create new link
   if (url.pathname === '/api/links' && request.method === 'POST') {
     const user = await getUserFromRequest(request, env);
