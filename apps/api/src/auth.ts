@@ -1,42 +1,25 @@
-import type { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import { Context } from 'hono';
+import { verify } from 'hono/jwt';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
-
-export interface AuthInfo {
-  userId?: string | null;
+export function getUserId(c: Context): string | null {
+  const user = c.get('jwtPayload');
+  if (!user || !user.sub) return null;
+  return user.sub;
 }
 
-export function getUserId(req: Request): string | null {
-  const auth = req.headers.authorization || '';
-  if (!auth.startsWith('Bearer ')) return null;
-  const token = auth.slice('Bearer '.length);
-  try {
-    const payload = jwt.verify(token, JWT_SECRET) as any;
-    // For admin-only system, return 'admin' as the user ID
-    return payload?.sub === 'admin' ? 'admin' : null;
-  } catch {
-    return null;
+export const authMiddleware = async (c: Context, next: () => Promise<void>) => {
+  const authHeader = c.req.header('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return c.json({ error: 'unauthorized' }, 401);
   }
-}
-
-export function isAdmin(req: Request): boolean {
-  const auth = req.headers.authorization || '';
-  if (!auth.startsWith('Bearer ')) return false;
-  const token = auth.slice('Bearer '.length);
+  const token = authHeader.substring(7);
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as any;
-    return payload?.sub === 'admin' && payload?.role === 'admin';
-  } catch {
-    return false;
+    const payload = await verify(token, c.env.JWT_SECRET || 'dev-secret-change-me');
+    c.set('jwtPayload', payload);
+    await next();
+  } catch (e) {
+    return c.json({ error: 'unauthorized' }, 401);
   }
-}
-
-export function requireAuth(req: Request, res: Response, next: NextFunction) {
-  const uid = getUserId(req);
-  if (!uid) return res.status(401).json({ error: 'unauthorized' });
-  (req as any).userId = uid;
-  next();
-}
+};
 
 

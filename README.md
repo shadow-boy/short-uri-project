@@ -1,160 +1,121 @@
-# Short URI Project
+# 基于 Cloudflare 的短链接项目
 
-一个可直接部署到 Vercel 的短链生成与管理项目：
-- 前端：React + Vite + TailwindCSS（`apps/web`）
-- 后端：Node.js + Express + Drizzle ORM + PostgreSQL（`apps/api`）
-- 数据库：Supabase（仅 DB 托管）
-- 部署：前后端分别部署至 Vercel，数据库使用 Supabase Connection Pooling（PgBouncer）
+这是一个使用现代技术栈构建的 URL 短链接项目，专为部署在 Cloudflare 生态系统而设计。
 
-> 推荐 Node 20 LTS（本地与 Vercel 都建议使用 Node 20）。
+## ✨ 功能特性
 
-## 目录结构（Monorepo）
+- **自定义短链**: 创建带有自定义 slug 的简短、易记的链接。
+- **管理后台**: 一个用于管理链接的简单仪表盘。
+- **分析统计**: 对每个链接进行基础的点击跟踪。
+- **边缘部署**: 运行在 Cloudflare 的全球网络上，实现低延迟。
+- **无服务器**: 使用 Cloudflare Pages 和 Workers 构建，数据存储在 Cloudflare KV 中。
 
-```
-short-uri-project/
-  apps/
-    api/        # Express 后端（Serverless 友好）
-    web/        # React + Vite 前端
-  packages/
-    db/         # Drizzle schema & SQL 迁移
-  scripts/
-    apply-migrations.mjs  # 简单 SQL 迁移执行脚本
-  drizzle.config.ts
-  .gitignore
-  package.json
-  tsconfig.base.json
-```
+## 🚀 技术栈
 
-## 功能概览
-- 管理员登录系统（基于环境变量的固定账号）
-- 创建/列表/删除短链（需登录后操作）
-- 短链点击量统计与分析
-- 访问 `/:slug` 跳转（后端 302）
-- `slug` 全小写；前端新建时自动生成 8 位随机 `slug`
+- **前端**: React, Vite, Tailwind CSS
+- **后端**: Hono on Cloudflare Pages Functions
+- **数据库**: Cloudflare KV
+- **代码仓库**: 使用 npm workspaces 管理的 Monorepo。
 
-## 前置要求
-- Node 20 LTS + npm 10+
-- Supabase 项目（获取 Connection Pooling DSN）
+## 🏗️ 项目结构
 
-## 环境变量
+本项目是一个 Monorepo，包含两个主要包：
 
-根目录 `.env`（不会提交到 Git）：
+- `apps/web`: 基于 React 的前端应用。
+- `apps/api`: 作为 Cloudflare Pages Function 运行的 Hono API。
 
-```
-DATABASE_URL=postgresql://<user>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres?sslmode=require
+## 🛠️ 本地开发
 
-# 管理员账号配置
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=admin123456
+### 1. 前提条件
 
-# JWT密钥
-JWT_SECRET=your-super-secret-jwt-key-change-in-production
-```
+- Node.js (v20 或更高版本)
+- npm
+- 一个 Cloudflare 账户
 
-- 必须使用 Supabase Connection Pooling（PgBouncer）DSN，端口通常为 `6543`，并附加 `sslmode=require`。
-- 管理员账号密码可自定义，默认为 `admin/admin123456`
-- 生产环境（Vercel）在项目设置的 Environment Variables 中设置所有变量。
+### 2. 安装
 
-前端（`apps/web`）支持（构建时变量）：
+克隆仓库并安装依赖：
 
-```
-VITE_API_BASE_URL=https://your-api.vercel.app
-```
-
-- 若未配置该变量，构建产物会回退为 `http://localhost:3001`，用于本地开发。
-- 生产强烈建议配置为后端线上域名；或在 web 项目添加 rewrite 代理 `/api/*` 到后端。
-
-## 安装与本地开发
-
-1) 安装依赖
-
-```
+```bash
+git clone https://github.com/your-repo/short-uri-project.git
+cd short-uri-project
 npm install
 ```
 
-2) 配置数据库连接
-- 在项目根创建 `.env`，填入 Supabase Pooling DSN（见上）
+### 3. 前端 (`apps/web`)
 
-3) 初始化数据库（建表）
+前端应该可以直接运行。要启动开发服务器：
 
-- 方式 A（控制台执行 SQL）：
-  - 打开 Supabase Dashboard → SQL Editor，执行 `packages/db/migrations/0000_init.sql`
-
-- 方式 B（本地运行脚本）：
-  - （仅用于本地开发）
-  ```bash
-  node scripts/apply-migrations.mjs
-  ```
-
-4) 启动后端与前端
-
-```
-# 后端（默认 http://localhost:3001）
-npm run dev:api
-
-# 前端（默认 http://localhost:5173）
+```bash
 npm run dev:web
 ```
 
-5) 访问
-- 管理端：`http://localhost:5173`（使用 admin/admin123456 登录）
-- 短链跳转：`http://localhost:3001/{slug}`（302 到目标地址）
+这将启动 Vite 开发服务器，通常地址为 `http://localhost:5173`。
 
-## API 速览
+### 4. 后端 (`apps/api`)
 
-- POST `/api/auth/login` 管理员登录
-  - 请求体：`{ username: string, password: string }`
-  - 成功：`200 { token, user }`
-- POST `/api/links` 创建短链（需认证）
-  - 请求体：`{ slug: string, destinationUrl: string }`（slug 小写）
-  - 成功：`201 { slug }`
-- GET `/api/links` 列表（需认证）
-- GET `/api/links/:id` 详情（需认证）
-- PUT `/api/links/:id` 更新（需认证）
-- DELETE `/api/links/:id` 删除（需认证）
-- GET `/api/analytics/:linkId/basic` 点击量统计（需认证）
-- GET `/:slug` 跳转（公开，记录点击）
+后端使用 Wrangler 在本地运行 Cloudflare Workers。
 
-## 部署到 Vercel
+#### a. 配置环境变量
 
-前后端建议分成两个 Vercel 项目（需要在 Vercel 部署两次，同一个 Git 仓库分别创建两个项目）：
+在 `apps/api` 目录下创建一个 `.dev.vars` 文件。该文件供 Wrangler 在本地开发时使用。
 
-- Web（React + Vite）
-  - Root Directory: `apps/web`
-  - 环境变量：`VITE_API_BASE_URL=https://your-api.vercel.app`
-  - 绑定域名（例如 `app.yourdomain.com`）
+**文件: `apps/api/.dev.vars`**
+```ini
+JWT_SECRET="a-very-secret-and-strong-key"
+ADMIN_USERNAME="admin"
+ADMIN_PASSWORD="your-local-password"
+```
 
-- API（Express）
-  - Root Directory: `apps/api`
-  - 环境变量：
-    - `DATABASE_URL=Supabase Pooling DSN（带 sslmode=require）`
-    - `ADMIN_USERNAME=admin`（可自定义）
-    - `ADMIN_PASSWORD=your-secure-password`（强烈建议修改）
-    - `JWT_SECRET=your-super-secret-jwt-key`（必须修改）
-  - 绑定短链域名（例如 `s.yourdomain.com`）
+> **注意**: 不要将 `.dev.vars` 文件提交到版本控制中。
 
-> 若不想在前端配置 `VITE_API_BASE_URL`，可在 Web 项目加 `vercel.json` 将 `/api/*` 重写到 API 域名。
+#### b. 运行 API
 
-## 常见问题（FAQ）
+为 API 启动本地开发服务器：
 
-- 线上构建后前端依然请求 `http://localhost:3001`？
-  - 因为 `VITE_API_BASE_URL` 未在构建时提供，产物使用了默认回退值。请在 Web 项目环境变量设置该值并重新部署。
+```bash
+npm run dev:api
+```
 
-- 数据库连接报错 `Connection terminated unexpectedly`？
-  - 使用 Supabase Connection Pooling DSN（端口 6543 + `sslmode=require`）。
-  - 本地建议使用 Node 20 LTS。
+这将启动一个本地 Wrangler 服务器，通常地址为 `http://localhost:8787`。它还会在本地创建一个 `.wrangler` 目录来模拟 KV 存储。
 
-- 证书错误 `self-signed certificate in certificate chain`？
-  - 确保 DSN 带 `sslmode=require`。
-  - 某些环境需要提供 CA 证书，生产环境请勿关闭 TLS 验证。
+## ☁️ 部署
 
-- 端口占用 `EADDRINUSE: :3001`？
-  - 本地已有进程占用 3001，结束占用或更换端口。
+本项目设计用于部署到 Cloudflare Pages。
 
-## 开发备注
-- `slug` 强制小写，前端创建时自动生成 8 位随机字符串。
-- 前端样式使用 TailwindCSS，可根据需要调整 `tailwind.config.js` 与 `src/index.css`。
-- ORM 使用 Drizzle，schema 在 `packages/db/schema.ts`，可扩展统计与多租户字段。
+### 1. 连接你的仓库
 
----
-如需接入 Supabase Auth、统计查询接口、限流、或 Vercel 配置重写文件等，我可以继续补充。
+在 Cloudflare 仪表盘中，创建一个新的 Pages 项目并连接到你的 GitHub 仓库。
+
+### 2. 配置构建设置
+
+- **构建命令**: `npm run build --workspace @shorturi/web`
+- **构建输出目录**: `apps/web/dist`
+- **根目录**: 保持为仓库根目录。
+
+### 3. 配置 Functions 和 KV
+
+#### a. Functions
+
+Cloudflare Pages 会自动检测 `/apps/api` 目录中的 Functions (因为有 `api/index.ts` 结构) 并进行部署。
+
+#### b. KV 命名空间绑定
+
+1.  在 Cloudflare 仪表盘中，转到 **Workers & Pages** > **KV**。
+2.  创建一个新的 KV 命名空间 (例如 `SHORT_URI_KV_PROD`)。
+3.  进入你的 Pages 项目设置 > **Functions** > **KV namespace bindings**。
+4.  添加一个新的绑定：
+    - **变量名称**: `SHORT_URI_KV`
+    - **KV 命名空间**: 选择你创建的命名空间。
+
+#### c. 环境变量
+
+在你的 Pages 项目设置中，转到 **Environment Variables** 并为你的生产环境添加以下变量：
+
+- `JWT_SECRET`: 一个长的、随机的、保密的字符串。
+- `ADMIN_USERNAME`: 你期望的管理员用户名。
+- `ADMIN_PASSWORD`: 你期望的管理员密码。
+
+### 4. 部署
+
+保存你的设置。Cloudflare Pages 将会构建并部署你的项目。任何推送到你连接的分支的新提交都会触发新的部署。
