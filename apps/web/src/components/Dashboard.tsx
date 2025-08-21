@@ -58,11 +58,16 @@ export default function Dashboard({ onLogout }: DashboardProps) {
     setMsg(null);
     try {
       const slug = generateSlug(8);
-      await api.post('/api/links', { slug, destinationUrl: url });
+      const response = await api.post('/api/links', { slug, destinationUrl: url });
+      console.log('Link created:', response.data);
       setUrl('');
+      
+      // 添加短暂延迟确保数据已保存
+      await new Promise(resolve => setTimeout(resolve, 500));
       await load();
       setMsg(`创建成功！短链: ${slug}`);
     } catch (e: any) {
+      console.error('Create error:', e);
       setMsg(e?.response?.data?.error || '创建失败');
     } finally {
       setLoading(false);

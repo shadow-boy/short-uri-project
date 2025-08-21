@@ -161,6 +161,10 @@ export async function onRequest(context) {
           links.push(JSON.parse(data));
         }
       }
+      
+      // Sort links by creation time (newest first)
+      links.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
       return new Response(JSON.stringify(links), {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       });
