@@ -2,12 +2,12 @@
   "name": "@shorturi/api",
   "private": true,
   "engines": {
-    "node": "^20"
+    "node": "^20 || ^22"
   },
   "scripts": {
     "dev": "wrangler dev src/app.ts --local --kv SHORT_URI_KV",
     "deploy": "wrangler pages deploy ./dist",
-    "build": "esbuild src/app.ts --bundle --format=esm --outfile=../../functions/[[path]].js",
+    "build": "esbuild src/app.ts --bundle --format=esm --outfile=../../functions/[[path]].js --define:process.env.NODE_ENV=\\\"production\\\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

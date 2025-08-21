@@ -97,7 +97,7 @@ npm run dev:api
 
 #### a. Functions
 
-我们的构建流程 (`npm run build`) 会自动将 `apps/api` 工作区的 API 代码编译并输出到项目根目录下的 `/functions` 目录中。Cloudflare Pages 会自动检测并部署这个目录作为无服务器函数，从而无缝地将我们的前后端部署在一起。
+我们的构建流程 (`npm run build`) 会自动将 `apps/api` 工作区的 API 代码编译并输出到项目根目录下的 `/functions/[[path]].js` 文件中。这个文件作为 Cloudflare Pages Functions 的入口点，处理所有的 API 路由。
 
 #### b. KV 命名空间绑定
 
@@ -119,3 +119,10 @@ npm run dev:api
 ### 4. 部署
 
 保存你的设置。Cloudflare Pages 将会构建并部署你的项目。任何推送到你连接的分支的新提交都会触发新的部署。
+
+### 5. 故障排除
+
+如果遇到 "No routes found" 错误，请确保：
+- 构建命令正确设置为 `npm run build`
+- 项目根目录包含生成的 `functions` 目录
+- KV 命名空间绑定正确配置

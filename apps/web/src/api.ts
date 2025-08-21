@@ -1,7 +1,10 @@
 import axios from 'axios';
 import { getToken } from './auth';
 
-const baseURL = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:3001';
+// 在开发环境使用localhost，在生产环境使用相对URL
+const baseURL = import.meta.env.DEV 
+  ? (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001')
+  : '';
 
 export const api = axios.create({
   baseURL,
