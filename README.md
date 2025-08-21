@@ -4,25 +4,37 @@
 
 ## ✨ 功能特性
 
-- **自定义短链**: 创建带有自定义 slug 的简短、易记的链接。
-- **管理后台**: 一个用于管理链接的简单仪表盘。
-- **分析统计**: 对每个链接进行基础的点击跟踪。
-- **边缘部署**: 运行在 Cloudflare 的全球网络上，实现低延迟。
-- **无服务器**: 使用 Cloudflare Pages 和 Workers 构建，数据存储在 Cloudflare KV 中。
+- **自定义短链**: 创建带有自定义 slug 的简短、易记的链接
+- **管理后台**: 一个用于管理链接的简单仪表盘
+- **分析统计**: 对每个链接进行基础的点击跟踪
+- **边缘部署**: 运行在 Cloudflare 的全球网络上，实现低延迟
+- **无服务器**: 使用 Cloudflare Pages Functions 构建，数据存储在 Cloudflare KV 中
+- **高性能**: 批量查询点击统计，优化加载速度
 
 ## 🚀 技术栈
 
-- **前端**: React, Vite, Tailwind CSS
-- **后端**: Hono on Cloudflare Pages Functions
+- **前端**: React 18, Vite, Tailwind CSS
+- **后端**: Cloudflare Pages Functions (原生 JavaScript)
 - **数据库**: Cloudflare KV
-- **代码仓库**: 使用 npm workspaces 管理的 Monorepo。
+- **部署**: Cloudflare Pages
+- **代码仓库**: 使用 npm workspaces 管理的 Monorepo
 
 ## 🏗️ 项目结构
 
-本项目是一个 Monorepo，包含两个主要包：
-
-- `apps/web`: 基于 React 的前端应用。
-- `apps/api`: 作为 Cloudflare Pages Function 运行的 Hono API。
+```
+short-uri-project/
+├── apps/
+│   ├── web/                 # React 前端应用
+│   │   ├── src/
+│   │   ├── package.json
+│   │   └── vite.config.ts
+│   └── api/                 # API 工作区 (仅用于构建)
+│       └── package.json
+├── functions/               # Cloudflare Pages Functions 输出
+├── functions-simple.js      # 主要的 API 实现
+├── package.json            # 根目录配置
+└── README.md
+```
 
 ## 🛠️ 本地开发
 
@@ -42,9 +54,9 @@ cd short-uri-project
 npm install
 ```
 
-### 3. 前端 (`apps/web`)
+### 3. 前端开发
 
-前端应该可以直接运行。要启动开发服务器：
+启动前端开发服务器：
 
 ```bash
 npm run dev:web
@@ -52,32 +64,9 @@ npm run dev:web
 
 这将启动 Vite 开发服务器，通常地址为 `http://localhost:5173`。
 
-### 4. 后端 (`apps/api`)
+### 4. 本地测试 API
 
-后端使用 Wrangler 在本地运行 Cloudflare Workers。
-
-#### a. 配置环境变量
-
-在 `apps/api` 目录下创建一个 `.dev.vars` 文件。该文件供 Wrangler 在本地开发时使用。
-
-**文件: `apps/api/.dev.vars`**
-```ini
-JWT_SECRET="a-very-secret-and-strong-key"
-ADMIN_USERNAME="admin"
-ADMIN_PASSWORD="your-local-password"
-```
-
-> **注意**: 不要将 `.dev.vars` 文件提交到版本控制中。
-
-#### b. 运行 API
-
-为 API 启动本地开发服务器：
-
-```bash
-npm run dev:api
-```
-
-这将启动一个本地 Wrangler 服务器，通常地址为 `http://localhost:8787`。它还会在本地创建一个 `.wrangler` 目录来模拟 KV 存储。
+由于项目使用 Cloudflare Pages Functions，本地 API 测试需要部署到 Cloudflare Pages 进行。
 
 ## ☁️ 部署
 
@@ -91,45 +80,71 @@ npm run dev:api
 
 - **构建命令**: `npm run build`
 - **构建输出目录**: `apps/web/dist`
-- **根目录**: 保持为仓库根目录。
+- **根目录**: 保持为仓库根目录
 
 ### 3. 配置 Functions 和 KV
 
 #### a. Functions
 
-我们的构建流程 (`npm run build`) 会自动将 `apps/api` 工作区的 API 代码编译并输出到项目根目录下的 `/functions/[[path]].js` 文件中。这个文件作为 Cloudflare Pages Functions 的入口点，处理所有的 API 路由，包括登录、链接管理和短链接重定向。
+构建流程会自动将 `functions-simple.js` 复制到 `functions/[[path]].js`，作为 Cloudflare Pages Functions 的入口点。
 
 #### b. KV 命名空间绑定
 
-1.  在 Cloudflare 仪表盘中，转到 **Workers & Pages** > **KV**。
-2.  创建一个新的 KV 命名空间 (例如 `SHORT_URI_KV_PROD`)。
-3.  进入你的 Pages 项目设置 > **Functions** > **KV namespace bindings**。
-4.  添加一个新的绑定：
-    - **变量名称**: `SHORT_URI_KV`
-    - **KV 命名空间**: 选择你创建的命名空间。
+1. 在 Cloudflare 仪表盘中，转到 **Workers & Pages** > **KV**
+2. 创建一个新的 KV 命名空间 (例如 `SHORT_URI_KV_PROD`)
+3. 进入你的 Pages 项目设置 > **Functions** > **KV namespace bindings**
+4. 添加一个新的绑定：
+   - **变量名称**: `SHORT_URI_KV`
+   - **KV 命名空间**: 选择你创建的命名空间
 
 #### c. 环境变量
 
 在你的 Pages 项目设置中，转到 **Environment Variables** 并为你的生产环境添加以下变量：
 
-- `JWT_SECRET`: 一个长的、随机的、保密的字符串。
-- `ADMIN_USERNAME`: 你期望的管理员用户名。
-- `ADMIN_PASSWORD`: 你期望的管理员密码。
+- `JWT_SECRET`: 一个长的、随机的、保密的字符串
+- `ADMIN_USERNAME`: 你期望的管理员用户名
+- `ADMIN_PASSWORD`: 你期望的管理员密码
 
 ### 4. 部署
 
 保存你的设置。Cloudflare Pages 将会构建并部署你的项目。任何推送到你连接的分支的新提交都会触发新的部署。
 
-### 5. 部署状态
+## 📡 API 端点
 
-✅ **Functions 已正确配置**: 项目现在包含正确的 `onRequest` 导出，确保 Cloudflare Pages Functions 能够处理所有 API 路由。
+项目提供以下 API 端点：
 
-✅ **API 路由已就绪**: 以下 API 端点现在应该能够正常工作：
 - `POST /api/auth/login` - 管理员登录
-- `GET /api/links` - 获取链接列表
+- `GET /api/links` - 获取链接列表 (按创建时间降序)
 - `POST /api/links` - 创建新链接
-- `GET /api/links/:id` - 获取特定链接
-- `PUT /api/links/:id` - 更新链接
 - `DELETE /api/links/:id` - 删除链接
-- `GET /api/analytics/:linkId/basic` - 获取点击统计
+- `GET /api/analytics/batch` - 批量获取所有链接的点击统计
 - `GET /:slug` - 短链接重定向
+
+## 🎯 性能优化
+
+- **批量查询**: 使用 `/api/analytics/batch` 端点一次性获取所有链接的点击统计
+- **边缘缓存**: 利用 Cloudflare 的全球 CDN 网络
+- **无服务器**: 按需扩展，无需管理服务器
+
+## 🔧 开发命令
+
+```bash
+# 安装依赖
+npm install
+
+# 启动前端开发服务器
+npm run dev:web
+
+# 构建项目
+npm run build
+
+# 部署 (通过 Git 集成自动部署)
+npm run deploy
+```
+
+## 📝 注意事项
+
+- 项目已从 PostgreSQL/Drizzle 迁移到 Cloudflare KV
+- 移除了所有数据库相关的依赖和配置
+- API 使用原生 JavaScript 实现，无需额外的框架
+- 所有功能都经过测试并正常工作

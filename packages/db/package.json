@@ -1,9 +1,0 @@
-{
-  "name": "@shorturi/db",
-  "private": true,
-  "type": "module",
-  "exports": {
-    ".": "./schema.ts"
-  }
-}
-

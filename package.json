@@ -2,21 +2,18 @@
   "name": "short-uri-project",
   "private": true,
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "apps/*"
   ],
   "scripts": {
-    "dev:api": "npm run dev --workspace @shorturi/api",
     "dev:web": "npm run dev --workspace @shorturi/web",
     "build": "rm -rf functions && npm run build --workspaces --if-present",
-    "deploy:api": "npm run deploy --workspace @shorturi/api",
-    "deploy:web": "npm run deploy --workspace @shorturi/web",
-    "deps:update": "npm --workspace @shorturi/web update && npm --workspace @shorturi/api update"
+    "deploy": "npm run build && echo 'Deploy to Cloudflare Pages via Git integration'"
   },
   "devDependencies": {
     "@types/node": "^20.19.10",
-    "dotenv": "^16.6.1",
-    "dotenv-cli": "^10.0.0",
     "typescript": "^5.9.2"
+  },
+  "engines": {
+    "node": "^20 || ^22"
   }
 }
