@@ -5,7 +5,7 @@
     "node": "^20 || ^22"
   },
   "scripts": {
-    "build": "mkdir -p ../../functions && cp ../../functions-simple.js ../../functions/[[path]].js"
+    "build": "cp ../../functions-simple.js ../../functions/[[path]].js"
   },
   "dependencies": {},
   "devDependencies": {}

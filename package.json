@@ -6,7 +6,7 @@
   ],
   "scripts": {
     "dev:web": "npm run dev --workspace @shorturi/web",
-    "build": "rm -rf functions && npm run build --workspaces --if-present",
+    "build": "rm -rf functions && mkdir -p functions && npm run build --workspaces --if-present",
     "deploy": "npm run build && echo 'Deploy to Cloudflare Pages via Git integration'"
   },
   "devDependencies": {
