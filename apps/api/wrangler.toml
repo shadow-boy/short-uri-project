@@ -1,5 +1,5 @@
 name = "short-uri-api"
-main = "api/index.ts"
+main = "src/app.ts"
 compatibility_date = "2024-07-18"
 
 kv_namespaces = [

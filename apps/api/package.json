@@ -5,9 +5,9 @@
     "node": "^20"
   },
   "scripts": {
-    "dev": "wrangler dev api/index.ts --local --kv SHORT_URI_KV",
+    "dev": "wrangler dev src/app.ts --local --kv SHORT_URI_KV",
     "deploy": "wrangler pages deploy ./dist",
-    "build": "rm -rf dist && esbuild --bundle api/index.ts --format=esm --outfile=dist/index.js",
+    "build": "esbuild src/app.ts --bundle --format=esm --outfile=../../functions/[[path]].js",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

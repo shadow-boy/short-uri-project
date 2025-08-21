@@ -89,7 +89,7 @@ npm run dev:api
 
 ### 2. 配置构建设置
 
-- **构建命令**: `npm run build --workspace @shorturi/web`
+- **构建命令**: `npm run build`
 - **构建输出目录**: `apps/web/dist`
 - **根目录**: 保持为仓库根目录。
 
@@ -97,7 +97,7 @@ npm run dev:api
 
 #### a. Functions
 
-Cloudflare Pages 会自动检测 `/apps/api` 目录中的 Functions (因为有 `api/index.ts` 结构) 并进行部署。
+我们的构建流程 (`npm run build`) 会自动将 `apps/api` 工作区的 API 代码编译并输出到项目根目录下的 `/functions` 目录中。Cloudflare Pages 会自动检测并部署这个目录作为无服务器函数，从而无缝地将我们的前后端部署在一起。
 
 #### b. KV 命名空间绑定
 

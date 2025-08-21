@@ -8,7 +8,7 @@
   "scripts": {
     "dev:api": "npm run dev --workspace @shorturi/api",
     "dev:web": "npm run dev --workspace @shorturi/web",
-    "build": "npm run build --workspaces --if-present",
+    "build": "rm -rf functions && npm run build --workspaces --if-present",
     "deploy:api": "npm run deploy --workspace @shorturi/api",
     "deploy:web": "npm run deploy --workspace @shorturi/web",
     "deps:update": "npm --workspace @shorturi/web update && npm --workspace @shorturi/api update"
