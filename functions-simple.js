@@ -281,23 +281,7 @@ export async function onRequest(context) {
     }
   }
 
-  // Default response for all other paths
-  return new Response(JSON.stringify({
-    message: 'Short URI API is working!',
-    path: url.pathname,
-    method: request.method,
-    timestamp: new Date().toISOString(),
-    endpoints: [
-      'GET /healthz - Health check',
-      'POST /api/auth/login - Admin login',
-      'GET /api/links - Get all links (requires auth)',
-      'POST /api/links - Create new link (requires auth)',
-      'GET /:slug - Redirect to destination URL'
-    ]
-  }), {
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*'
-    }
-  });
+  // For all other paths, let Cloudflare Pages serve static files
+  // This allows the frontend to be served correctly
+  return env.ASSETS.fetch(request);
 }
